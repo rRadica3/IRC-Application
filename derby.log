@@ -1,6 +1,6 @@
 ----------------------------------------------------------------
-Tue Aug 13 21:14:58 EDT 2024:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.17.1.0 - (1913217): instance a816c00e-0191-4e73-d0c6-00000ebaad10 
+Wed Aug 14 19:14:59 EDT 2024:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.17.1.0 - (1913217): instance a816c00e-0191-532c-533a-00000df8cf08 
 on database directory C:\Users\dizzy\Documents\LANProject\UserDatabase with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@25f38edc 
 Loaded from file:/C:/Users/dizzy/Downloads/db-derby-10.17.1.0-lib/db-derby-10.17.1.0-lib/lib/derby.jar
 java.vendor=Oracle Corporation
@@ -12,8 +12,8 @@ os.version=10.0
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''
 ----------------------------------------------------------------
-Tue Aug 13 21:15:21 EDT 2024: Shutting down Derby engine
+Wed Aug 14 19:15:43 EDT 2024: Shutting down Derby engine
 ----------------------------------------------------------------
-Tue Aug 13 21:15:21 EDT 2024:
-Shutting down instance a816c00e-0191-4e73-d0c6-00000ebaad10 on database directory C:\Users\dizzy\Documents\LANProject\UserDatabase with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@25f38edc 
+Wed Aug 14 19:15:43 EDT 2024:
+Shutting down instance a816c00e-0191-532c-533a-00000df8cf08 on database directory C:\Users\dizzy\Documents\LANProject\UserDatabase with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@25f38edc 
 ----------------------------------------------------------------

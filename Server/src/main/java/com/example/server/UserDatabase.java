@@ -17,8 +17,8 @@ import javafx.stage.Stage;
 import java.sql.*;
 
 public class UserDatabase extends Application {
-    private final TableView<User> table = new TableView<>();
-    private final ObservableList<User> userData = FXCollections.observableArrayList();
+    private final TableView<Interaction> table = new TableView<>();
+    private final ObservableList<Interaction> userData = FXCollections.observableArrayList();
 
     @Override
     public void init() throws Exception {
@@ -35,7 +35,7 @@ public class UserDatabase extends Application {
             if (result.next()) {
                 System.out.println("user_info exists");
             } else {
-                state.execute("create table user_info(userName varchar(100), password varchar(100), admin boolean, token varchar(100), online boolean)");
+                state.execute("create table user_info(userName varchar(100), password varchar(100), token varchar(100), admin boolean, online boolean)");
                 System.out.println("user_info created");
             }
         } catch (SQLException e) {
@@ -93,23 +93,23 @@ public class UserDatabase extends Application {
         VBox mainLayout = new VBox(title, gp);
         mainLayout.setPadding(new Insets(20));
 
-        TableColumn<User, String> usernamecol = new TableColumn<>("Username");
-        TableColumn<User, String> passwordcol = new TableColumn<>("Password");
-        TableColumn<User, Boolean> admincol = new TableColumn<>("Administrator");
-        TableColumn<User, String> tokencol = new TableColumn<>("Token");
-        TableColumn<User, Boolean> onlinecol = new TableColumn<>("Online");
+        TableColumn<Interaction, String> usernamecol = new TableColumn<>("Username");
+        TableColumn<Interaction, String> passwordcol = new TableColumn<>("Password");
+        TableColumn<Interaction, String> tokencol = new TableColumn<>("Token");
+        TableColumn<Interaction, Boolean> admincol = new TableColumn<>("Administrator");
+        TableColumn<Interaction, Boolean> onlinecol = new TableColumn<>("Online");
 
         table.getColumns().add(usernamecol);
         table.getColumns().add(passwordcol);
-        table.getColumns().add(admincol);
         table.getColumns().add(tokencol);
+        table.getColumns().add(admincol);
         table.getColumns().add(onlinecol);
 
         table.setStyle("-fx-font-size: 30px; -fx-pref-width: 750");
         usernamecol.setStyle("-fx-font-size: 20px; -fx-pref-width: 250px");
         passwordcol.setStyle("-fx-font-size: 20px; -fx-pref-width: 250px");
-        admincol.setStyle("-fx-font-size: 20px; -fx-pref-width: 250px");
         tokencol.setStyle("-fx-font-size: 20px; -fx-pref-width: 250px");
+        admincol.setStyle("-fx-font-size: 20px; -fx-pref-width: 250px");
         onlinecol.setStyle("-fx-font-size: 20px; -fx-pref-width: 250px");
 
         Scene viewScene = new Scene(table);
@@ -117,6 +117,7 @@ public class UserDatabase extends Application {
         submit.setOnAction(e -> {
             try (
                     Connection connect = DriverManager.getConnection("jdbc:derby:UserDatabase");
+                    PreparedStatement validateUsername = connect.prepareStatement("SELECT 1 FROM user_info WHERE userName = ?");
                     PreparedStatement addRecord = connect.prepareStatement("INSERT INTO user_info VALUES(?, ?, ?, ?, ?)");
             ) {
                 System.out.println("Connected to database.");
@@ -128,23 +129,30 @@ public class UserDatabase extends Application {
 
                 System.out.println("Data retrieved from controls.");
 
-                addRecord.setString(1, usernameText);
-                addRecord.setString(2, password);
-                addRecord.setBoolean(3, adminStatus);
-                addRecord.setString(4, null);
-                addRecord.setBoolean(5, false);
-                addRecord.executeUpdate();
-                System.out.println("Added record to table");
+                validateUsername.setString(1, usernameText);
+                ResultSet result = validateUsername.executeQuery();
+
+                if(result.next()){
+                    System.out.println("User already exists");
+                }else{
+                    addRecord.setString(1, usernameText);
+                    addRecord.setString(2, password);
+                    addRecord.setString(3, null);
+                    addRecord.setBoolean(4, adminStatus);
+                    addRecord.setBoolean(5, false);
+                    addRecord.executeUpdate();
+                    System.out.println("Added record to table");
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Successful Operation");
+                    alert.setHeaderText(null);
+                    alert.setContentText("Record Added.");
+                    alert.show();
+                }
 
                 tfUsername.setText("");
                 tfPassword.setText("");
-                rbYes.setSelected(true);
+                rbYes.setSelected(false);
 
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Successful Operation");
-                alert.setHeaderText(null);
-                alert.setContentText("Record Added.");
-                alert.show();
             } catch (SQLException ex) {
                 System.out.println(ex.getMessage());
             }
@@ -169,13 +177,13 @@ public class UserDatabase extends Application {
                     String token = result.getString("token");
                     boolean online = result.getBoolean("online");
 
-                    User currentUser = new User(userName, password, admin, token, online);
+                    Interaction currentUser = new Interaction(userName, password, token, admin, online);
                     userData.add(currentUser);
 
                     usernamecol.setCellValueFactory(new PropertyValueFactory<>("username"));
                     passwordcol.setCellValueFactory(new PropertyValueFactory<>("password"));
-                    admincol.setCellValueFactory(new PropertyValueFactory<>("admin"));
                     tokencol.setCellValueFactory(new PropertyValueFactory<>("token"));
+                    admincol.setCellValueFactory(new PropertyValueFactory<>("admin"));
                     onlinecol.setCellValueFactory(new PropertyValueFactory<>("online"));
 
                     table.setItems(userData);
@@ -207,17 +215,17 @@ public class UserDatabase extends Application {
                 while (result.next()) {
                     String userName = result.getString("userName");
                     String password = result.getString("password");
-                    boolean admin = result.getBoolean("admin");
                     String token = result.getString("token");
+                    boolean admin = result.getBoolean("admin");
                     boolean online = result.getBoolean("online");
 
-                    User currentUser = new User(userName, password, admin, token, online);
+                    Interaction currentUser = new Interaction(userName, password, token, admin, online);
                     userData.add(currentUser);
 
                     usernamecol.setCellValueFactory(new PropertyValueFactory<>("username"));
                     passwordcol.setCellValueFactory(new PropertyValueFactory<>("password"));
-                    admincol.setCellValueFactory(new PropertyValueFactory<>("admin"));
                     tokencol.setCellValueFactory(new PropertyValueFactory<>("token"));
+                    admincol.setCellValueFactory(new PropertyValueFactory<>("admin"));
                     onlinecol.setCellValueFactory(new PropertyValueFactory<>("online"));
 
                     table.setItems(userData);

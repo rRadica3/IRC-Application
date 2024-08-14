@@ -20,8 +20,11 @@ import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 
 public class Client extends Application {
-    private String username = "";
-    private String token = "";
+    static final int PORT = 8000;
+    static final String HOST = "localhost";
+    protected Socket socket;
+    private String username;
+    private String token;
     private ObjectOutputStream objectToServer;
     private ObjectInputStream objectFromServer;
     private CountDownLatch latch = new CountDownLatch(1); // CountDownLatch for synchronization
@@ -85,44 +88,39 @@ public class Client extends Application {
 
         // Create a background thread for socket connection
         new Thread(() -> {
+            // Create socket to connect to the server
             try {
-                // Create socket to connect to the server
-                Socket socket = new Socket("localhost", 8000);
+                Socket socket = new Socket(HOST, PORT);
                 objectToServer = new ObjectOutputStream(socket.getOutputStream());
                 objectFromServer = new ObjectInputStream(socket.getInputStream());
-                latch.countDown(); // Signal that the socket and streams are ready
-            } catch (IOException ex) {
-                Platform.runLater(() -> {
-                    // Handle connection error on the UI thread
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Connection Error");
-                    alert.setHeaderText(null);
-                    alert.setContentText("Could not connect to the server. Please try again later.");
-                    alert.showAndWait();
-                });
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
+            latch.countDown(); // Signal that the socket and streams are ready
         }).start();
 
         logIn.setOnAction(e -> {
             new Thread(() -> {
                 try {
                     latch.await(); // Wait until socket and streams are initialized
-                    User logInUser = new User(tfUsername.getText(), tfPassword.getText());
-                    objectToServer.writeObject(logInUser);
-                    objectToServer.flush();
-                    User validatedUser = (User) objectFromServer.readObject();
-                    if (validatedUser.getToken() != null) {
-                        username = validatedUser.getUsername();
-                        token = validatedUser.getToken();
+                    Interaction logInUser = new Interaction(tfUsername.getText(), tfPassword.getText(), 1);
+
+                    if(clientLogin(logInUser)){
                         Platform.runLater(() -> {
-                            try {
-                                // Create scene
-                                Scene mainScene = new Scene(mainPane, 450, 200);
-                                primaryStage.setTitle("Client");
-                                primaryStage.setScene(mainScene);
-                            } catch (Exception ex) {
-                                throw new RuntimeException(ex);
-                            }
+                            // Create scene
+                            Scene mainScene = new Scene(mainPane, 450, 200);
+                            primaryStage.setTitle("Client");
+                            primaryStage.setScene(mainScene);
+                        });
+                    }else{
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle("Failed Operation");
+                            alert.setHeaderText(null);
+                            alert.setContentText("Incorrect Password/User already logged in");
+                            alert.show();
+                            tfUsername.setText("");
+                            tfPassword.setText("");
                         });
                     }
                 } catch (IOException | InterruptedException | ClassNotFoundException ex) {
@@ -131,22 +129,45 @@ public class Client extends Application {
             }).start();
         });
 
-        new Thread(() -> {
-            try {
-                latch.await(); // Wait until socket and streams are initialized
+        createAccount.setOnAction(e -> {
+            new Thread(() -> {
+                try {
+                    latch.await(); // Wait until socket and streams are initialized
+                    Interaction newUser = new Interaction(tfUsername.getText(), tfPassword.getText(), 0);
 
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }).start();
+                    if(clientLogin(newUser)){
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle("Successful Operation");
+                            alert.setHeaderText(null);
+                            alert.setContentText("User Added.");
+                            alert.show();
+                        });
+                    }else{
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle("Failed Operation");
+                            alert.setHeaderText(null);
+                            alert.setContentText("User Already Exists.");
+                            alert.show();
+                        });
+                    }
+                    tfUsername.setText("");
+                    tfPassword.setText("");
+                } catch (IOException | InterruptedException | ClassNotFoundException ex) {
+                    // Handle exceptions (log or show to the user)
+                }
+            }).start();
+        });
 
         tf.setOnAction(e -> {
             new Thread(() -> {
                 try {
                     latch.await(); // Wait until socket and streams are initialized
-                    ClientAction action = new ClientAction(username, token, 1, "Server", tf.getText());
+                    Interaction action = new Interaction(username, token, "Server", tf.getText(), 3);
                     objectToServer.writeObject(action);
                     objectToServer.flush();
+                    tf.setText("");
                 } catch (IOException | InterruptedException ex) {
                     // Handle exceptions (log or show to the user)
                 }
@@ -157,7 +178,7 @@ public class Client extends Application {
             new Thread(() -> {
                 try {
                     latch.await(); // Wait until socket and streams are initialized
-                    ClientAction action = new ClientAction(username, token, 0);
+                    Interaction action = new Interaction(username, token, "Server", tf.getText(), 2);
                     objectToServer.writeObject(action);
                     objectToServer.flush();
                 } catch (IOException | InterruptedException ex) {
@@ -165,9 +186,26 @@ public class Client extends Application {
                 }
             }).start();
         });
+
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    private boolean clientLogin(Interaction logInUser) throws IOException, ClassNotFoundException {
+        objectToServer.writeObject(logInUser);
+        objectToServer.flush();
+        Interaction validatedUser = (Interaction) objectFromServer.readObject();
+        if (validatedUser.getToken() != null) {
+            username = validatedUser.getUsername();
+            token = validatedUser.getToken();
+            return true;
+        }else if(validatedUser.isValid()){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public static void main (String[]args){
+            launch(args);
     }
 }
+
